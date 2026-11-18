@@ -98,7 +98,6 @@
     background: #f0f9ff; border: 1.5px solid #7dd3fc; color: #0369a1;
   }
   .status-led { width: 9px; height: 9px; border-radius: 50%; background: #00c853; box-shadow: 0 0 10px #00c853; }
-  .status-led.offline { background: #00a3ff; box-shadow: 0 0 10px #00a3ff; }
 
   /* Main Container */
   .shell { max-width: 1280px; margin: 28px auto; padding: 0 20px; }
@@ -337,7 +336,7 @@
   </div>
 
   <div class="nav-actions">
-    <span class="cloud-chip"><span class="status-led offline" id="cloudDot"></span><span id="cloudText">Cloud Ready</span></span>
+    <span class="cloud-chip"><span class="status-led" id="cloudDot"></span><span id="cloudText">Local Vault Secure</span></span>
     <button class="nav-tab active" onclick="openMainSection('studentPortal', this)">📝 Student Exam</button>
     <button class="nav-tab" onclick="openMainSection('educatorLogin', this)">👨‍🏫 Educator Portal</button>
     <button class="nav-tab" onclick="openMainSection('officerLogin', this)">🛡️ Officer Login</button>
@@ -418,7 +417,7 @@
     <div class="neon-panel" id="stuPostSubmitBox" style="display:none;">
       <div class="panel-header">
         <span>✅ Assessment Submitted Successfully!</span>
-        <span class="tag tag-green">Recorded in Cloud</span>
+        <span class="tag tag-green">Saved Locally</span>
       </div>
       <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:16px;">Your responses have been securely submitted to your Educator. Official marksheets are issued by the Educator / Officer.</p>
       <div id="postSubmitKpis"></div>
@@ -446,7 +445,7 @@
       <div class="panel-header">
         <span>👨‍🏫 Educator Command Center</span>
         <div style="display:flex; gap:8px;">
-          <button class="btn btn-white-blue btn-xs" onclick="pullCloudData(true)">🔄 Sync Latest Cloud</button>
+          <button class="btn btn-white-blue btn-xs" onclick="exportDataBackup()">💾 Backup Data</button>
           <button class="btn btn-red btn-xs" onclick="exitDashboard()">Logout</button>
         </div>
       </div>
@@ -455,9 +454,9 @@
         <div class="sub-pill active" onclick="selectEduTab('tabEduMarksheets', this)">📄 Marksheets & Profile Adjuster</div>
         <div class="sub-pill" onclick="selectEduTab('tabEduBulkQ', this)">➕ Bulk Question Bank</div>
         <div class="sub-pill" onclick="selectEduTab('tabEduGrowth', this)">📈 Student Progress & Focus Radar</div>
-        <div class="sub-pill" onclick="selectEduTab('tabEduPlans', this)">📅 Cloud Academic Plans Vault <span class="badge-num" id="eduPlanCountBadge">0</span></div>
+        <div class="sub-pill" onclick="selectEduTab('tabEduPlans', this)">📅 Academic Plans Vault <span class="badge-num" id="eduPlanCountBadge">0</span></div>
         <div class="sub-pill" onclick="selectEduTab('tabEduOffReviews', this)">🛡️ Officer Reviews & Feedback <span class="badge-num" id="eduAuditCountBadge">0</span></div>
-        <div class="sub-pill" onclick="selectEduTab('tabEduFirebase', this)">⚙️ Exam Control @ Firebase</div>
+        <div class="sub-pill" onclick="selectEduTab('tabEduSettings', this)">⚙️ Exam & Logo Settings</div>
       </div>
 
       <!-- TAB 1: Marksheets & Profile Editor -->
@@ -563,11 +562,11 @@ Ans: C"></textarea>
         </div>
       </div>
 
-      <!-- TAB 4: Long-Term Cloud Academic Plans Vault -->
+      <!-- TAB 4: Long-Term Academic Plans Vault -->
       <div id="tabEduPlans" class="sub-pane">
         <div style="background:#f0f9ff; border:1.5px solid #7dd3fc; border-radius:16px; padding:18px; margin-bottom:20px;">
-          <h4 style="color:#061329; margin-bottom:6px;">📤 Upload & Permanently Store Academic Plan in Cloud (Excel, PDF, or Word)</h4>
-          <p style="font-size:0.83rem; color:#475569; margin-bottom:14px;">Uploaded files (Weekly, Monthly, Year-Long) are auto-analyzed and permanently stored in your Firebase Cloud Vault so both you and the Officer can view, preview, or download the original file from any device, anywhere.</p>
+          <h4 style="color:#061329; margin-bottom:6px;">📤 Upload & Permanently Store Academic Plan (Excel, PDF, or Word)</h4>
+          <p style="font-size:0.83rem; color:#475569; margin-bottom:14px;">Uploaded files (Weekly, Monthly, Year-Long) are auto-analyzed and permanently stored in your Local Vault so both you and the Officer can view, preview, or download the original file anytime.</p>
           <div class="grid-3">
             <div class="input-box">
               <label>Plan Category *</label>
@@ -590,11 +589,11 @@ Ans: C"></textarea>
             <label>Teaching Objectives / Syllabus Summary (Optional)</label>
             <textarea id="planExtraNotes" rows="2" placeholder="Optional notes... the system will also auto-extract and analyze your uploaded Excel, PDF, or Word file."></textarea>
           </div>
-          <button class="btn btn-neon-blue" onclick="analyzeAndStorePlan()">☁️ Analyze & Save Permanently to Cloud</button>
+          <button class="btn btn-neon-blue" onclick="analyzeAndStorePlan()">☁️ Analyze & Save Permanently</button>
         </div>
 
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-          <h4 style="color:#061329;">📚 Long-Term Cloud Plans Archive (Access & Download Anytime, Anywhere)</h4>
+          <h4 style="color:#061329;">📚 Academic Plans Archive (Access & Download Anytime, Anywhere)</h4>
           <select id="eduPlanVaultFilter" style="max-width:240px;" onchange="renderEduPlansList()">
             <option value="ALL">All Saved Plans</option>
             <option value="Weekly Plan">Weekly Plans</option>
@@ -630,13 +629,9 @@ Ans: C"></textarea>
         </div>
       </div>
 
-      <!-- TAB 6: Exam Control @ Firebase -->
-      <div id="tabEduFirebase" class="sub-pane">
+      <!-- TAB 6: Exam & Logo Settings -->
+      <div id="tabEduSettings" class="sub-pane">
         <div class="grid-2">
-          <div class="input-box">
-            <label>Firebase Realtime Database URL (Cloud Sync)</label>
-            <input type="url" id="cfgFbUrl" placeholder="https://your-project-default-rtdb.asia-southeast1.firebasedatabase.app">
-          </div>
           <div class="input-box">
             <label>Exam Time Duration (Minutes)</label>
             <input type="number" id="cfgDuration" min="1" max="180" value="30">
@@ -657,8 +652,8 @@ Ans: C"></textarea>
           </div>
         </div>
         <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:10px;">
-          <button class="btn btn-neon-blue" onclick="saveExamControls()">💾 Save Settings & Sync Cloud</button>
-          <button class="btn btn-white-blue" onclick="pullCloudData(true)">🔄 Force Sync from Firebase</button>
+          <button class="btn btn-neon-blue" onclick="saveExamControls()">💾 Save Exam Settings</button>
+          <button class="btn btn-white-blue" onclick="exportDataBackup()">📥 Export JSON Backup</button>
         </div>
       </div>
     </div>
@@ -684,7 +679,7 @@ Ans: C"></textarea>
       <div class="panel-header">
         <span>🛡️ CSA / BSS Officer Monitoring & Audit Console</span>
         <div style="display:flex; gap:8px;">
-          <button class="btn btn-white-blue btn-xs" onclick="pullCloudData(true)">🔄 Refresh Cloud Data</button>
+          <button class="btn btn-white-blue btn-xs" onclick="exportDataBackup()">💾 Backup Data</button>
           <button class="btn btn-red btn-xs" onclick="exitDashboard()">Logout</button>
         </div>
       </div>
@@ -955,7 +950,6 @@ let dbState = {
     officer: "Abhisekh@2026"
   },
   config: {
-    firebaseUrl: "https://swagat-cbt-default-rtdb.asia-southeast1.firebasedatabase.app",
     durationMinutes: 30,
     examStatus: "ACTIVE",
     logoDataUrl: EMBEDDED_LOGO
@@ -977,7 +971,7 @@ let growthChart = null;
 let tabSwitchWarnings = 0;
 
 function bootSystem() {
-  const cached = localStorage.getItem("bss_csa_hub_final_v1");
+  const cached = localStorage.getItem("bss_csa_hub_local_final_v1");
   if (cached) {
     try {
       const parsed = JSON.parse(cached);
@@ -991,20 +985,28 @@ function bootSystem() {
   const curMonthEl = document.getElementById("stuMonth");
   if (curMonthEl) curMonthEl.value = monthNames[new Date().getMonth()];
   syncConfigToDom();
-  pullCloudData(false);
+  renderAllPanels();
 }
 
 function persistData() {
   try {
-    localStorage.setItem("bss_csa_hub_final_v1", JSON.stringify(dbState));
+    localStorage.setItem("bss_csa_hub_local_final_v1", JSON.stringify(dbState));
   } catch (e) {
     console.warn("Local storage quota notice:", e);
   }
-  pushCloudData();
+}
+
+function exportDataBackup() {
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dbState, null, 2));
+  const downloadAnchor = document.createElement('a');
+  downloadAnchor.setAttribute("href", dataStr);
+  downloadAnchor.setAttribute("download", "BSS_CSA_Hub_Backup_" + new Date().toISOString().slice(0,10) + ".json");
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  downloadAnchor.remove();
 }
 
 function syncConfigToDom() {
-  document.getElementById("cfgFbUrl").value = dbState.config.firebaseUrl || "";
   document.getElementById("cfgDuration").value = dbState.config.durationMinutes || 30;
   document.getElementById("cfgStatus").value = dbState.config.examStatus || "ACTIVE";
 
@@ -1032,62 +1034,8 @@ function restoreDefaultLogo() {
   alert("Restored official Banabasi Seva Samiti logo and deep marksheet watermark!");
 }
 
-function buildFirebaseEndpoint() {
-  let u = (dbState.config.firebaseUrl || "").trim();
-  if (!u) return "";
-  if (u.endsWith("/")) u = u.slice(0, -1);
-  return u + "/bss_csa_learning_hub_final.json";
-}
-
-async function pushCloudData() {
-  const ep = buildFirebaseEndpoint();
-  if (!ep) return;
-  try {
-    const res = await fetch(ep, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(dbState)
-    });
-    if (res.ok) {
-      document.getElementById("cloudDot").classList.remove("offline");
-      document.getElementById("cloudText").textContent = "Firebase Cloud Synced";
-    }
-  } catch (e) {
-    document.getElementById("cloudDot").classList.add("offline");
-    document.getElementById("cloudText").textContent = "Local Backup Active";
-  }
-}
-
-async function pullCloudData(notify) {
-  const ep = buildFirebaseEndpoint();
-  if (!ep) return;
-  try {
-    const res = await fetch(ep);
-    if (res.ok) {
-      const remote = await res.json();
-      if (remote && typeof remote === "object") {
-        dbState = {
-          ...dbState,
-          ...remote,
-          questions: Array.isArray(remote.questions) ? remote.questions : dbState.questions,
-          results: Array.isArray(remote.results) ? remote.results : dbState.results,
-          plans: Array.isArray(remote.plans) ? remote.plans : dbState.plans,
-          audits: Array.isArray(remote.audits) ? remote.audits : dbState.audits
-        };
-        if (!dbState.config.logoDataUrl) dbState.config.logoDataUrl = EMBEDDED_LOGO;
-        try { localStorage.setItem("bss_csa_hub_final_v1", JSON.stringify(dbState)); } catch (e) {}
-        syncConfigToDom();
-        renderAllPanels();
-      }
-      document.getElementById("cloudDot").classList.remove("offline");
-      document.getElementById("cloudText").textContent = "Firebase Cloud Synced";
-      if (notify) alert("Cloud database synchronized! Latest plans, marksheets & officer reviews loaded.");
-    }
-  } catch (e) {
-    document.getElementById("cloudDot").classList.add("offline");
-    document.getElementById("cloudText").textContent = "Local Backup Active";
-    if (notify) alert("Offline mode: using local browser storage.");
-  }
+function pullCloudData(notify) {
+  if (notify) alert("Local secure storage active. All student records, questions, and academic plans are saved permanently in this browser.");
 }
 
 // ==================== NAVIGATION & AUTH ====================
@@ -1125,7 +1073,6 @@ function authenticateEducator() {
     currentAuthorizedRole = "educator";
     document.getElementById("eduPasswordInput").value = "";
     openMainSection("educatorDashboard", null);
-    pullCloudData(false);
     renderAllPanels();
   } else {
     alert("Invalid Educator Password!");
@@ -1138,7 +1085,6 @@ function authenticateOfficer() {
     currentAuthorizedRole = "officer";
     document.getElementById("offPasswordInput").value = "";
     openMainSection("officerDashboard", null);
-    pullCloudData(false);
     renderAllPanels();
   } else {
     alert("Invalid Officer Password!");
@@ -1479,21 +1425,33 @@ function renderEduResultsTable() {
     return;
   }
 
-  tbody.innerHTML = list.slice().reverse().map(r => `
-    <tr>
-      <td><strong>${r.roll}</strong></td>
-      <td>${r.name}</td>
-      <td>${r.cls}</td>
-      <td>${r.month}</td>
-      <td>${r.correct}/${r.total}</td>
-      <td><strong>${r.percentageStr || r.percentage + '%'}</strong></td>
-      <td><span class="tag ${r.percentage >= 50 ? 'tag-blue' : 'tag-red'}">${r.percentage >= 50 ? 'Developing' : 'Needs Focus'}</span></td>
-      <td class="no-print" style="display:flex; gap:6px; flex-wrap:wrap;">
-        <button class="btn btn-neon-blue btn-xs" onclick="viewOfficialMarksheet('${r.id}')">📄 Marksheet</button>
-        <button class="btn btn-amber btn-xs" onclick="openEditRecordModal('${r.id}')">✏️ Edit</button>
-      </td>
-    </tr>
-  `).join("");
+  tbody.innerHTML = list.slice().reverse().map((r, revIndex) => {
+    const realIndex = dbState.results.length - 1 - revIndex;
+    return `
+      <tr>
+        <td><strong>${r.roll}</strong></td>
+        <td>${r.name}</td>
+        <td>${r.cls}</td>
+        <td>${r.month}</td>
+        <td>${r.correct}/${r.total}</td>
+        <td><strong>${r.percentageStr || r.percentage + '%'}</strong></td>
+        <td><span class="tag ${r.percentage >= 50 ? 'tag-blue' : 'tag-red'}">${r.percentage >= 50 ? 'Developing' : 'Needs Focus'}</span></td>
+        <td class="no-print" style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="btn btn-neon-blue btn-xs" onclick="viewOfficialMarksheet('${r.id}')">📄 Marksheet</button>
+          <button class="btn btn-amber btn-xs" onclick="openEditRecordModal('${r.id}')">✏️ Edit</button>
+          <button class="btn btn-red btn-xs" onclick="deleteStudentResult(${realIndex})">🗑️</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function deleteStudentResult(idx) {
+  if (confirm("Are you sure you want to delete this student assessment record?")) {
+    dbState.results.splice(idx, 1);
+    persistData();
+    renderAllPanels();
+  }
 }
 
 function openEditRecordModal(id) {
@@ -1740,7 +1698,7 @@ function renderEduGrowthSection() {
   });
 }
 
-// ==================== CLOUD ACADEMIC PLANS VAULT ====================
+// ==================== LOCAL ACADEMIC PLANS VAULT ====================
 function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -1761,7 +1719,7 @@ async function analyzeAndStorePlan() {
 
   const file = fileEl.files[0];
   if (file.size > 4.5 * 1024 * 1024) {
-    return alert("File size exceeds 4.5 MB limit for cloud storage. Please upload a smaller document.");
+    return alert("File size exceeds 4.5 MB limit. Please upload a smaller document.");
   }
 
   const ext = file.name.split(".").pop().toLowerCase();
@@ -1825,7 +1783,7 @@ async function analyzeAndStorePlan() {
   document.getElementById("planExtraNotes").value = "";
   fileEl.value = "";
   renderAllPanels();
-  alert("☁️ Plan analyzed and permanently saved to Cloud Vault! Both you and the Officer can view and download it anytime.");
+  alert("☁️ Plan analyzed and permanently saved to Vault!");
 }
 
 function downloadStoredPlan(planId) {
@@ -1907,7 +1865,7 @@ function renderEduPlansList() {
 }
 
 function removePlan(id) {
-  if (confirm("Remove this plan permanently from the Cloud Archive?")) {
+  if (confirm("Remove this plan permanently from the Vault?")) {
     dbState.plans = dbState.plans.filter(p => p.id !== id);
     persistData();
     renderAllPanels();
@@ -1955,27 +1913,13 @@ function renderEducatorOfficerReviews() {
   }).join("");
 }
 
-// ==================== EXAM CONTROLS @ FIREBASE ====================
+// ==================== EXAM CONTROLS ====================
 function saveExamControls() {
-  dbState.config.firebaseUrl = document.getElementById("cfgFbUrl").value.trim();
   dbState.config.durationMinutes = parseInt(document.getElementById("cfgDuration").value) || 30;
   dbState.config.examStatus = document.getElementById("cfgStatus").value;
   persistData();
   syncConfigToDom();
-  alert("Exam control settings saved and synced!");
-}
-
-function handleLogoUpload(ev) {
-  const f = ev.target.files[0];
-  if (!f) return;
-  const rd = new FileReader();
-  rd.onload = e => {
-    dbState.config.logoDataUrl = e.target.result;
-    persistData();
-    syncConfigToDom();
-    alert("Logo and marksheet watermark updated!");
-  };
-  rd.readAsDataURL(f);
+  alert("Exam control settings saved!");
 }
 
 // ==================== OFFICER MONITORING & AUDIT ====================
