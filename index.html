@@ -378,18 +378,19 @@
         <div class="input-box">
           <label>Exam Month *</label>
           <select id="stuMonth">
-            <option value="January 2026">January 2026</option>
-            <option value="February 2026">February 2026</option>
-            <option value="March 2026">March 2026</option>
-            <option value="April 2026">April 2026</option>
-            <option value="May 2026">May 2026</option>
-            <option value="June 2026">June 2026</option>
-            <option value="July 2026">July 2026</option>
-            <option value="August 2026">August 2026</option>
-            <option value="September 2026">September 2026</option>
-            <option value="October 2026">October 2026</option>
-            <option value="November 2026" selected>November 2026</option>
-            <option value="December 2026">December 2026</option>
+            <option value="">-- Select Exam Month --</option>
+            <option value="January">January</option>
+            <option value="February">February</option>
+            <option value="March">March</option>
+            <option value="April">April</option>
+            <option value="May">May</option>
+            <option value="June">June</option>
+            <option value="July">July</option>
+            <option value="August">August</option>
+            <option value="September">September</option>
+            <option value="October">October</option>
+            <option value="November">November</option>
+            <option value="December">December</option>
           </select>
         </div>
       </div>
@@ -986,6 +987,9 @@ function bootSystem() {
       if (!dbState.config.logoDataUrl) dbState.config.logoDataUrl = EMBEDDED_LOGO;
     } catch (e) { console.error(e); }
   }
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const curMonthEl = document.getElementById("stuMonth");
+  if (curMonthEl) curMonthEl.value = monthNames[new Date().getMonth()];
   syncConfigToDom();
   pullCloudData(false);
 }
@@ -1202,8 +1206,8 @@ function launchStudentExam() {
   const cls = document.getElementById("stuClass").value;
   const month = document.getElementById("stuMonth").value;
 
-  if (!name || !roll || !cls) {
-    alert("Please enter Candidate Name, Roll Number, and Class.");
+  if (!name || !roll || !cls || !month) {
+    alert("Please enter Candidate Name, Roll Number, Class, and Exam Month.");
     return;
   }
   if (dbState.questions.length === 0) {
