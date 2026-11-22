@@ -9,6 +9,8 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
         <style>
             :root {
@@ -1559,6 +1561,110 @@ Ans: C"></textarea>
                 audits: []
             };
 
+            const FIREBASE_CONFIG = {
+                databaseURL: "https://swagat-cbt-default-rtdb.asia-southeast1.firebasedatabase.app"
+            };
+            const FIREBASE_NODE_PATH = "bss_csa_learning_hub_v5";
+            let fbDatabase = null;
+            let isApplyingRemoteSync = false;
+
+            function setCloudStatusUI(mode, msg) {
+                const dot = document.getElementById("cloudDot");
+                const txt = document.getElementById("cloudText");
+                if (txt && msg)
+                    txt.textContent = msg;
+                if (dot) {
+                    if (mode === "live") {
+                        dot.style.background = "#00c853";
+                        dot.style.boxShadow = "0 0 10px #00c853";
+                    } else if (mode === "syncing") {
+                        dot.style.background = "#0284c7";
+                        dot.style.boxShadow = "0 0 10px #38bdf8";
+                    } else {
+                        dot.style.background = "#f59e0b";
+                        dot.style.boxShadow = "0 0 10px #f59e0b";
+                    }
+                }
+            }
+
+            function initFirebaseRealtimeSync() {
+                try {
+                    if (!window.firebase || !FIREBASE_CONFIG.databaseURL) {
+                        setCloudStatusUI("local", "Local Vault Secure");
+                        return;
+                    }
+                    const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+                    fbDatabase = app.database();
+                    const ref = fbDatabase.ref(FIREBASE_NODE_PATH);
+
+                    ref.on("value", (snap) => {
+                        const remote = snap.val();
+                        if (remote && typeof remote === "object") {
+                            isApplyingRemoteSync = true;
+                            dbState = {
+                                ...dbState,
+                                passwords: {
+                                    ...dbState.passwords,
+                                    ...(remote.passwords || {})
+                                },
+                                config: {
+                                    ...dbState.config,
+                                    ...(remote.config || {}),
+                                    logoDataUrl: EMBEDDED_LOGO
+                                },
+                                questions: Array.isArray(remote.questions) ? remote.questions : dbState.questions,
+                                results: Array.isArray(remote.results) ? remote.results : [],
+                                plans: Array.isArray(remote.plans) ? remote.plans : [],
+                                audits: Array.isArray(remote.audits) ? remote.audits : []
+                            };
+                            localStorage.setItem("bss_csa_hub_local_final_v1", JSON.stringify(dbState));
+                            syncConfigToDom();
+                            renderAllPanels();
+                            isApplyingRemoteSync = false;
+                            setCloudStatusUI("live", "Firebase Live Sync");
+                        } else {
+                            setCloudStatusUI("live", "Firebase Connected");
+                        }
+                    }
+                    , (err) => {
+                        console.warn("Firebase read fallback:", err);
+                        setCloudStatusUI("local", "Local Vault (Offline)");
+                    }
+                    );
+                } catch (e) {
+                    console.warn("Firebase init error:", e);
+                    setCloudStatusUI("local", "Local Vault Secure");
+                }
+            }
+
+            function pushStateToFirebase() {
+                if (isApplyingRemoteSync || !fbDatabase)
+                    return;
+                try {
+                    setCloudStatusUI("syncing", "Syncing to Firebase...");
+                    fbDatabase.ref(FIREBASE_NODE_PATH).set({
+                        passwords: dbState.passwords,
+                        config: {
+                            durationMinutes: dbState.config.durationMinutes,
+                            examStatus: dbState.config.examStatus
+                        },
+                        questions: dbState.questions,
+                        results: dbState.results,
+                        plans: dbState.plans,
+                        audits: dbState.audits,
+                        updatedAt: new Date().toISOString()
+                    }).then( () => {
+                        setCloudStatusUI("live", "Firebase Live Sync");
+                    }
+                    ).catch( () => {
+                        setCloudStatusUI("local", "Saved Locally");
+                    }
+                    );
+                } catch (e) {
+                    console.warn("Firebase push skipped:", e);
+                }
+            }
+
             let examRuntime = null;
             let countdownTimer = null;
             let activeResetRole = "educator";
@@ -1589,6 +1695,7 @@ Ans: C"></textarea>
                     curMonthEl.value = monthNames[new Date().getMonth()];
                 syncConfigToDom();
                 renderAllPanels();
+                initFirebaseRealtimeSync();
             }
 
             function persistData() {
@@ -1597,6 +1704,7 @@ Ans: C"></textarea>
                 } catch (e) {
                     console.warn("Local storage quota notice:", e);
                 }
+                pushStateToFirebase();
             }
 
             function exportDataBackup() {
@@ -1642,8 +1750,39 @@ Ans: C"></textarea>
             }
 
             function pullCloudData(notify) {
-                if (notify)
+                if (fbDatabase) {
+                    fbDatabase.ref(FIREBASE_NODE_PATH).once("value").then( (snap) => {
+                        if (snap.exists()) {
+                            const remote = snap.val();
+                            dbState = {
+                                ...dbState,
+                                passwords: {
+                                    ...dbState.passwords,
+                                    ...(remote.passwords || {})
+                                },
+                                config: {
+                                    ...dbState.config,
+                                    ...(remote.config || {}),
+                                    logoDataUrl: EMBEDDED_LOGO
+                                },
+                                questions: Array.isArray(remote.questions) ? remote.questions : dbState.questions,
+                                results: Array.isArray(remote.results) ? remote.results : [],
+                                plans: Array.isArray(remote.plans) ? remote.plans : [],
+                                audits: Array.isArray(remote.audits) ? remote.audits : []
+                            };
+                            localStorage.setItem("bss_csa_hub_local_final_v1", JSON.stringify(dbState));
+                            syncConfigToDom();
+                            renderAllPanels();
+                            if (notify)
+                                alert("✅ Latest data synced from Firebase Realtime Database!");
+                        } else if (notify) {
+                            alert("Firebase connected! No cloud records found yet.");
+                        }
+                    }
+                    );
+                } else if (notify) {
                     alert("Local secure storage active. All student records, questions, and academic plans are saved permanently in this browser.");
+                }
             }
 
             // ==================== NAVIGATION & AUTH ====================
